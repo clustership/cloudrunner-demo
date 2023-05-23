@@ -1,0 +1,26 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: add-worker-node
+spec:
+  workspaces:
+  - name: shared-workspace
+  params:
+  - name: az
+    type: string
+    description: Availibility zone for new node (on AWS)
+  tasks:
+  - name: apply-manifests
+    taskRef:
+      name: apply-manifests
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+  - name: check-deployment
+    taskRef:
+      name: check-deployment
+    params:
+    - name: deployment
+      value: $(params.deployment-name)
+    runAfter:
+    - apply-manifests
