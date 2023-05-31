@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
-  name: add-worker-node
+  name: do-some-cnf-tests
   namespace: pipelines-demo
 spec:
   workspaces:
@@ -20,7 +20,36 @@ spec:
     type: string
     default: "3"
   tasks:
-  - name: patch-machinepool
+  - name: create-kubeconfig
+    taskRef:
+      name: kubeconfig-creator
+      kind: ClusterTask
+    workspaces:
+    - name: output
+      workspace: shared-workspace
+    params:
+    - name: name
+      value: test-cluster
+    - name: url
+      value: https://api.demo-cd-cluster.w7f5h.sandbox1288.opentlc.com:6443
+    - name: insecure
+      value: true
+    - name: username
+      value: kubeadmin
+    - name: password
+      value: JsGiP-xuXL9-UUF5G-NknK4
+  - name: authentication-test
+    taskRef:
+      name: authentication-test
+    workspaces:
+    - name: input
+      workspace: shared-workspace
+    params:
+    - name: filename
+      value: kubeconfig
+    runAfter:
+    - create-kubeconfig
+  - name: add-worker
     taskRef:
       name: patch-machinepool
     workspaces:
@@ -47,4 +76,26 @@ spec:
     - name: node_count
       value: $(params.node_count)
     runAfter:
-    - patch-machinepool
+    - add-worker
+  - name: test-cnfs
+    taskRef:
+      name: do-some-stuff
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+    runAfter:
+    - wait-for-machines
+  finally:
+  - name: remove-worker
+    taskRef:
+      name: patch-machinepool
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+    params:
+    - name: machinepool_name
+      value: $(params.machinepool_name)
+    - name: cluster_namespace
+      value: $(params.cluster_namespace)
+    - name: node_count
+      value: 2

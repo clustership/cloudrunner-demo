@@ -9,3 +9,4 @@ resources:
 - 02-tasks.yaml
 - 03-pipeline.yaml
 - 04-pipeline-sa-rolebinding.yaml
+- 05-kubeconfig-pvc.yaml

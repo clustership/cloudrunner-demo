@@ -63,3 +63,53 @@ spec:
           until [ $replicas = $(inputs.params.node_count) ]; do replicas=$(oc -n $(inputs.params.cluster_namespace) get machinepool $(inputs.params.machinepool_name) -o jsonpath='{.status.replicas}'); echo "${replicas}"; sleep 3; done
           echo Done!
           echo -----------------------------------
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: do-some-stuff
+  namespace: pipelines-demo
+spec:
+  workspaces:
+  - name: source
+  params:
+    - name: cluster_namespace
+      description: The namespace of the managed cluster definition
+      type: string
+      default: "demo-cd-cluster"
+  steps:
+    - name: apply
+      image: quay.io/openshift/origin-cli:latest
+      workingDir: /workspace/source
+      command: ["/bin/bash", "-c"]
+      args:
+        - |-
+          sleep 30
+          echo Done!
+          echo -----------------------------------
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: authentication-test
+  namespace: pipelines-demo
+spec:
+  params:
+  - name: filename
+    description: kubeconfig file name
+    type: string
+  workspaces:
+  - name: input
+    readOnly: true
+  steps:
+  - name: get
+    image: quay.io/openshift/origin-cli:4.6
+    script: |
+
+      export KUBECONFIG="$(workspaces.input.path)/$(inputs.params.filename)"
+      echo "Using KUBECONFIG=${KUBECONFIG}"
+      ls -la $(workspaces.input.path)
+      ls -la /workspace
+      #
+      # check that the cluster is configured
+      oc get pods
