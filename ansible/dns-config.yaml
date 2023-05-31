@@ -1,0 +1,8 @@
+---
+- name: Configure dns
+  hosts: all
+
+  tasks:
+  - name: Configure dns for {{ node_name }}
+    debug:
+      msg: Configure dns for {{ node_name }}
