@@ -1,0 +1,50 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: add-worker-node
+  namespace: pipelines-demo
+spec:
+  workspaces:
+  - name: shared-workspace
+  params:
+  - name: machinepool_name
+    description: The machinepool name
+    type: string
+    default: "demo-cd-cluster-worker"
+  - name: cluster_namespace
+    description: The namespace of the managed cluster definition
+    type: string
+    default: "demo-cd-cluster"
+  - name: node_count
+    description: The node count for this machineset
+    type: string
+    default: "3"
+  tasks:
+  - name: patch-machinepool
+    taskRef:
+      name: patch-machinepool
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+    params:
+    - name: machinepool_name
+      value: $(params.machinepool_name)
+    - name: cluster_namespace
+      value: $(params.cluster_namespace)
+    - name: node_count
+      value: $(params.node_count)
+  - name: wait-for-machines
+    taskRef:
+      name: wait-for-machines
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+    params:
+    - name: machinepool_name
+      value: $(params.machinepool_name)
+    - name: cluster_namespace
+      value: $(params.cluster_namespace)
+    - name: node_count
+      value: $(params.node_count)
+    runAfter:
+    - patch-machinepool

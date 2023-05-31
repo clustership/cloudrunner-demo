@@ -3,6 +3,7 @@ apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: patch-machinepool
+  namespace: pipelines-demo
 spec:
   workspaces:
   - name: source
@@ -10,11 +11,11 @@ spec:
     - name: machinepool_name
       description: The machinepool name
       type: string
-      default: "k8s"
+      default: "pipelines-demo-worker"
     - name: cluster_namespace
       description: The namespace of the managed cluster definition
       type: string
-      default: "k8s"
+      default: "demo-cd-cluster"
     - name: node_count
       description: The node count for this machineset
       type: string
@@ -27,5 +28,38 @@ spec:
       args:
         - |-
           echo Patching machinepool $(inputs.params.machinepool_name) to $(inputs.params.node_count) replicas
-          oc -n $(inputs.params.cluster_namespace) patch machinepool ${inputs.params.machinepool_name} --type merge -p '{ "spec": { "replicas": $(inputs.params.node_count) } }'
+          oc -n $(inputs.params.cluster_namespace) patch machinepool $(inputs.params.machinepool_name) --type merge -p '{ "spec": { "replicas": $(inputs.params.node_count) } }'
+          echo -----------------------------------
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: wait-for-machines
+  namespace: pipelines-demo
+spec:
+  workspaces:
+  - name: source
+  params:
+    - name: machinepool_name
+      description: The machinepool name
+      type: string
+      default: "pipelines-demo-worker"
+    - name: cluster_namespace
+      description: The namespace of the managed cluster definition
+      type: string
+      default: "demo-cd-cluster"
+    - name: node_count
+      description: The node count for this machineset
+      type: string
+      default: "3"
+  steps:
+    - name: apply
+      image: quay.io/openshift/origin-cli:latest
+      workingDir: /workspace/source
+      command: ["/bin/bash", "-c"]
+      args:
+        - |-
+          replicas=$(oc -n $(inputs.params.cluster_namespace) get machinepool $(inputs.params.machinepool_name) -o jsonpath='{.status.replicas}')
+          until [ $replicas = $(inputs.params.node_count) ]; do replicas=$(oc -n $(inputs.params.cluster_namespace) get machinepool $(inputs.params.machinepool_name) -o jsonpath='{.status.replicas}'); echo "${replicas}"; sleep 3; done
+          echo Done!
           echo -----------------------------------
