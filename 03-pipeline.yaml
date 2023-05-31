@@ -22,22 +22,15 @@ spec:
   tasks:
   - name: create-kubeconfig
     taskRef:
-      name: kubeconfig-creator
-      kind: ClusterTask
+      name: extract-kubeconfig
     workspaces:
     - name: output
       workspace: shared-workspace
     params:
-    - name: name
-      value: test-cluster
-    - name: url
-      value: https://api.demo-cd-cluster.w7f5h.sandbox1288.opentlc.com:6443
-    - name: insecure
-      value: true
-    - name: username
-      value: kubeadmin
-    - name: password
-      value: JsGiP-xuXL9-UUF5G-NknK4
+    - name: cluster-namespace
+      value: demo-cd-cluster
+    - name: kubeconfig-secret
+      value: demo-cd-cluster-0-598vh-admin-kubeconfig
   - name: authentication-test
     taskRef:
       name: authentication-test

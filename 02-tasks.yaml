@@ -91,6 +91,35 @@ spec:
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
+  name: extract-kubeconfig
+  namespace: pipelines-demo
+spec:
+  params:
+  - name: kubeconfig-secret
+    description: kubeconfig secret name
+    type: string
+  - name: cluster-namespace
+    description: Cluster namespace
+    type: string
+  - name: filename
+    description: Kubeconfig filename
+    type: string
+    default: kubeconfig
+  workspaces:
+  - name: output
+  steps:
+  - name: extract
+    image: quay.io/openshift/origin-cli:latest
+    workingDir: /workspace/source
+    command: ["/bin/bash", "-c"]
+    args:
+      - |-
+        set -eu
+        oc -n $(inputs.params.cluster-namespace) get secret $(inputs.params.kubeconfig-secret) -o jsonpath='{.data.kubeconfig}' | base64 -d > $(workspaces.output.path)/$(inputs.params.filename)
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
   name: authentication-test
   namespace: pipelines-demo
 spec:
@@ -98,18 +127,22 @@ spec:
   - name: filename
     description: kubeconfig file name
     type: string
+    default: kubeconfig
   workspaces:
   - name: input
     readOnly: true
   steps:
   - name: get
-    image: quay.io/openshift/origin-cli:4.6
-    script: |
+    image: quay.io/openshift/origin-cli:latest
+    workingDir: /workspace/input
+    command: ["/bin/bash", "-c"]
+    args:
+      - |-
+        set -eu
 
-      export KUBECONFIG="$(workspaces.input.path)/$(inputs.params.filename)"
-      echo "Using KUBECONFIG=${KUBECONFIG}"
-      ls -la $(workspaces.input.path)
-      ls -la /workspace
-      #
-      # check that the cluster is configured
-      oc get pods
+        export KUBECONFIG="$(workspaces.input.path)/$(inputs.params.filename)"
+
+        oc status
+        oc whoami
+        oc whoami --show-server
+        oc get pods

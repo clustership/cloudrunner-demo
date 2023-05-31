@@ -1,0 +1,25 @@
+apiVersion: tekton.dev/v1
+kind: PipelineRun
+metadata:
+  labels:
+    tekton.dev/pipeline: do-some-cnf-tests
+  name: do-some-cnf-tests-run
+  namespace: pipelines-demo
+spec:
+  params:
+  - name: machinepool_name
+    value: demo-cd-cluster-worker
+  - name: cluster_namespace
+    value: demo-cd-cluster
+  - name: node_count
+    value: "2"
+  pipelineRef:
+    name: do-some-cnf-tests
+  taskRunTemplate:
+    serviceAccountName: pipeline
+  timeouts:
+    pipeline: 1h0m0s
+  workspaces:
+  - name: shared-workspace
+    persistentVolumeClaim:
+      claimName: kubeconfig-pvc
