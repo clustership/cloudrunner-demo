@@ -1,19 +1,24 @@
+---
 apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
-  name: patch-machineset
+  name: patch-machinepool
 spec:
   workspaces:
   - name: source
   params:
-    - name: machineset_name
-      description: The machinesetname
+    - name: machinepool_name
+      description: The machinepool name
+      type: string
+      default: "k8s"
+    - name: cluster_namespace
+      description: The namespace of the managed cluster definition
       type: string
       default: "k8s"
     - name: node_count
       description: The node count for this machineset
       type: string
-      default: "1"
+      default: "3"
   steps:
     - name: apply
       image: quay.io/openshift/origin-cli:latest
@@ -21,6 +26,6 @@ spec:
       command: ["/bin/bash", "-c"]
       args:
         - |-
-          echo Applying manifests in $(inputs.params.manifest_dir) directory
-          oc patch machinepool ${inputs.params.machinepool_name} --type merge -p '{ "spec": { "replicas": 3 } }'
+          echo Patching machinepool $(inputs.params.machinepool_name) to $(inputs.params.node_count) replicas
+          oc -n $(inputs.params.cluster_namespace) patch machinepool ${inputs.params.machinepool_name} --type merge -p '{ "spec": { "replicas": $(inputs.params.node_count) } }'
           echo -----------------------------------
