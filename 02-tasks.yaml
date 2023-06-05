@@ -142,7 +142,42 @@ spec:
 
         export KUBECONFIG="$(workspaces.input.path)/$(inputs.params.filename)"
 
-        oc status
-        oc whoami
-        oc whoami --show-server
-        oc get pods
+        set -x
+        env - oc --kubeconfig="$(workspaces.input.path)/$(inputs.params.filename)" status
+        env - oc --kubeconfig="$(workspaces.input.path)/$(inputs.params.filename)" whoami
+        env - oc --kubeconfig="$(workspaces.input.path)/$(inputs.params.filename)" whoami --show-server
+        env - oc --kubeconfig="$(workspaces.input.path)/$(inputs.params.filename)" get pods -A
+---
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: ansible-job
+  namespace: pipelines-demo
+spec:
+  params:
+  - name: automation-host
+    description: Automation Host
+    type: string
+    default: https://automation-ansible-automation-platform.apps.cluster-w7f5h.w7f5h.sandbox1288.opentlc.com
+  - name: job-template
+    description: Job Template
+    type: string
+    default: "Demo Job Template"
+  - name: username
+    description: Username
+    type: string
+  - name: password
+    description: Password
+    type: string
+  workspaces:
+  - name: source
+  steps:
+  - name: job 
+    image: quay.io/xymox/aap-ee-ocp4:0.0.4
+    workingDir: /workspace/input
+    command: ["/bin/bash", "-c"]
+    args:
+      - |-
+        set -eu
+
+        awx --conf.host $(inputs.params.automation-host) --conf.username $(inputs.params.username) --conf.password $(inputs.params.password) job_templates launch "$(inputs.params.job-template)" --monitor -f human

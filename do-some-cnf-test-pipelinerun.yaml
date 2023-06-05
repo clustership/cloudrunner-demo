@@ -3,7 +3,7 @@ kind: PipelineRun
 metadata:
   labels:
     tekton.dev/pipeline: do-some-cnf-tests
-  name: do-some-cnf-tests-run
+  generateName: do-some-cnf-tests-run-
   namespace: pipelines-demo
 spec:
   params:
@@ -13,6 +13,10 @@ spec:
     value: demo-cd-cluster
   - name: node_count
     value: "2"
+  - name: automation_username
+    value: "truc"
+  - name: automation_password
+    value: "bidule"
   pipelineRef:
     name: do-some-cnf-tests
   taskRunTemplate:

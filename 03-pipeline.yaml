@@ -19,6 +19,10 @@ spec:
     description: The node count for this machineset
     type: string
     default: "3"
+  - name: automation_username
+    description: Automation Username
+  - name: automation_password
+    description: Automation Password
   tasks:
   - name: create-kubeconfig
     taskRef:
@@ -31,6 +35,8 @@ spec:
       value: demo-cd-cluster
     - name: kubeconfig-secret
       value: demo-cd-cluster-0-598vh-admin-kubeconfig
+    - name: filename
+      value: kubeconfig.demo
   - name: authentication-test
     taskRef:
       name: authentication-test
@@ -39,7 +45,7 @@ spec:
       workspace: shared-workspace
     params:
     - name: filename
-      value: kubeconfig
+      value: kubeconfig.demo
     runAfter:
     - create-kubeconfig
   - name: add-worker
@@ -70,6 +76,17 @@ spec:
       value: $(params.node_count)
     runAfter:
     - add-worker
+  - name: config-test-env
+    taskRef:
+      name: ansible-job
+    workspaces:
+    - name: source
+      workspace: shared-workspace
+    params:
+    - name: username
+      value: $(params.automation_username)
+    - name: password
+      value: $(params.automation_password)
   - name: test-cnfs
     taskRef:
       name: do-some-stuff
